@@ -1,20 +1,32 @@
 from flask import Flask, request, jsonify, send_file
+import os
+
 import pandas as pd
 import numpy as np
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime
+from urllib.parse import quote_plus
 import io
 
 from database_model import Prediksi, Dataperencanaan, Perencanaan, Assetlab, db
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/labsaintek'
+
+username = "managerlab"
+password = "l@bJu@r4"  # Password dengan karakter @
+host = "localhost"
+database = "simalab"
+
+encoded_password = quote_plus(password)  # Encode karakter spesial
+database_uri = f"mysql+pymysql://{username}:{encoded_password}@{host}/{database}"
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/labsaintek'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
-model = load_model('Model/new_model_2.2.h5')
 scaler = MinMaxScaler(feature_range=(0, 1))
 
 # Ambil tahun dan bulan saat ini
@@ -44,6 +56,7 @@ def predict():
 
     try:
         # Get Data
+        model = load_model('Model/new_model_2.2.h5')
         df = pd.read_csv(file, delimiter=';')
         data_bhp = pd.read_csv('Dataset/DatasetAgro.csv', delimiter=';')
         data_bhp['created_at'] = data_bhp['created_at'].apply(transform_semester)
@@ -170,4 +183,5 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(port=5001)
+    # app.run(port=5001)
+    app.run(host='0.0.0.0' ,port=5001)
